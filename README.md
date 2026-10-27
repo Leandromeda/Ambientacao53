@@ -2,8 +2,8 @@
 ### SENAI São Paulo Skills · Ciclo 2026-2028
 ### Ocupação #53 — Computação em Nuvem
 
-> **Autor:** [Prof. Esp. Leandro Gaudio Rosa](https://www.linkedin.com/in/leandro-gr/) ([@Leandromeda no GitHub](https://github.com/Leandromeda/))  
-> **Licença & Proteção:** Direitos Reservados. Proteção ativa contra plágio, web scraping e clonagem não autorizada por IA.
+> **Autor:** [Prof. Esp. Leandro Gaudio Rosa](https://www.linkedin.com/in/leandro-gr/) · [![GitHub](https://img.shields.io/badge/GitHub-Leandromeda-181717?style=flat&logo=github)](https://github.com/Leandromeda/)  
+> **Licença:** Todos os direitos reservados.
 
 ---
 
@@ -107,9 +107,9 @@ Ao término de cada execução, são criados na pasta raiz:
 
 ---
 
-## 🛡️ Autoria e Proteção
+## 👤 Autoria e Licença
 
-- **Desenvolvido por:** [Prof. Esp. Leandro Gaudio Rosa](https://www.linkedin.com/in/leandro-gr/) ([@Leandromeda no GitHub](https://github.com/Leandromeda/))
+- **Desenvolvido por:** [Prof. Esp. Leandro Gaudio Rosa](https://www.linkedin.com/in/leandro-gr/) · [![GitHub](https://img.shields.io/badge/GitHub-Leandromeda-181717?style=flat&logo=github)](https://github.com/Leandromeda/)
 - **Ocupação:** #53 — Computação em Nuvem
 - **Evento:** SENAI São Paulo Skills · Ciclo 2026-2028
-- **Assinatura Digital:** SHA-256 Validated
+- **Licença:** Todos os direitos reservados.
