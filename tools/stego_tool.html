@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analisador de Esteganografia (Offline) - SENAI Skills</title>
+  <!--
+    Desenvolvido por: Prof. Esp. Leandro Gaudio Rosa (https://www.linkedin.com/in/leandro-gr/)
+    GitHub: https://github.com/Leandromeda/
+    Ocupação #53 - Computação em Nuvem | SENAI São Paulo Skills
+    Ferramenta Offline de Análise de Esteganografia (Visual Bit Planes & LSB Extraction)
+  -->
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.85);
+      --border: rgba(148, 163, 184, 0.2);
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e293b, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 950px;
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+    p.subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
+    .dropzone {
+      border: 2px dashed rgba(56, 189, 248, 0.4);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.6);
+      transition: all 0.2s;
+      margin-bottom: 1.5rem;
+    }
+    .dropzone:hover { border-color: var(--accent); background: rgba(56, 189, 248, 0.08); }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+      align-items: center;
+    }
+    button {
+      background: var(--accent);
+      color: #04121d;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { background: var(--accent-hover); }
+    button.secondary { background: rgba(255, 255, 255, 0.08); color: var(--text); border: 1px solid var(--border); }
+    button.secondary:hover { background: rgba(255, 255, 255, 0.15); }
+    button.active { background: #f59e0b; color: #000; }
+    .viewer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      background: #090d16;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background-image: repeating-linear-gradient(45deg, #1e293b 25%, transparent 25%, transparent 75%, #1e293b 75%, #1e293b), repeating-linear-gradient(45deg, #1e293b 25%, #0f172a 25%, #0f172a 75%, #1e293b 75%, #1e293b);
+      background-position: 0 0, 10px 10px;
+      background-size: 20px 20px;
+    }
+    .extracted-text {
+      width: 100%;
+      background: #0b0f19;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: "Consolas", monospace;
+      color: #38bdf8;
+      min-height: 80px;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">SENAI São Paulo Skills · Ocupação #53 (Computação em Nuvem)</div>
+    <h1>Analisador de Esteganografia (Offline)</h1>
+    <p class="subtitle">Ferramenta offline para inspeção visual de planos de bits (Bit Planes) e extração de texto via LSB (Item 18 do Checklist).</p>
+
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <p>Clique ou arraste uma imagem aqui (PNG, BMP, JPG) para inspecionar</p>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="loadImage(event)">
+    </div>
+
+    <div class="controls" id="controls" style="display:none">
+      <span style="font-size: 0.85rem; font-weight: 600; color: #cbd5e1;">Planos de Bits:</span>
+      <button class="secondary" onclick="renderOriginal()">Original</button>
+      <button class="secondary" onclick="renderBitPlane('r', 0)">Red 0 (LSB)</button>
+      <button class="secondary" onclick="renderBitPlane('g', 0)">Green 0 (LSB)</button>
+      <button class="secondary" onclick="renderBitPlane('b', 0)">Blue 0 (LSB)</button>
+      <button class="secondary" onclick="renderBitPlane('all', 0)">RGB 0 (LSB)</button>
+      <button class="secondary" onclick="invertColors()">Inverter Cores</button>
+      <button onclick="extractLSBText()">🔍 Extrair Texto LSB</button>
+    </div>
+
+    <div class="viewer" id="viewer" style="display:none">
+      <canvas id="canvas"></canvas>
+      <div style="width: 100%;">
+        <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom: 6px; color:#cbd5e1;">Texto Detectado via LSB:</label>
+        <div id="lsbText" class="extracted-text">(Clique em 'Extrair Texto LSB' para analisar dados embutidos)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Desenvolvido por <a href="https://www.linkedin.com/in/leandro-gr/" target="_blank" style="color:var(--accent); font-weight:bold;">Prof. Esp. Leandro Gaudio Rosa</a> (<a href="https://github.com/Leandromeda/" target="_blank">@Leandromeda no GitHub</a>) · 100% Offline e Funcional
+  </div>
+
+  <script>
+    let originalImageData = null;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    function loadImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          originalImageData = ctx.getImageData(0, 0, img.width, img.height);
+          document.getElementById('controls').style.display = 'flex';
+          document.getElementById('viewer').style.display = 'flex';
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderOriginal() {
+      if (!originalImageData) return;
+      ctx.putImageData(originalImageData, 0, 0);
+    }
+
+    function renderBitPlane(channel, bit) {
+      if (!originalImageData) return;
+      const w = canvas.width, h = canvas.height;
+      const imgData = ctx.createImageData(w, h);
+      const src = originalImageData.data;
+      const dst = imgData.data;
+      const mask = 1 << bit;
+
+      for (let i = 0; i < src.length; i += 4) {
+        let val = 0;
+        if (channel === 'r') val = (src[i] & mask) ? 255 : 0;
+        else if (channel === 'g') val = (src[i + 1] & mask) ? 255 : 0;
+        else if (channel === 'b') val = (src[i + 2] & mask) ? 255 : 0;
+        else if (channel === 'all') {
+          val = ((src[i] & mask) || (src[i+1] & mask) || (src[i+2] & mask)) ? 255 : 0;
+        }
+        dst[i] = val;
+        dst[i + 1] = val;
+        dst[i + 2] = val;
+        dst[i + 3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    function invertColors() {
+      if (!originalImageData) return;
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        d[i] = 255 - d[i];
+        d[i + 1] = 255 - d[i + 1];
+        d[i + 2] = 255 - d[i + 2];
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    function extractLSBText() {
+      if (!originalImageData) return;
+      const src = originalImageData.data;
+      let bits = [];
+      for (let i = 0; i < src.length; i += 4) {
+        bits.push(src[i] & 1);     // R LSB
+        bits.push(src[i + 1] & 1); // G LSB
+        bits.push(src[i + 2] & 1); // B LSB
+        if (bits.length >= 80000) break; // Limit inspection length
+      }
+      let chars = [];
+      for (let i = 0; i < bits.length; i += 8) {
+        let byte = 0;
+        for (let b = 0; b < 8; b++) {
+          byte = (byte << 1) | bits[i + b];
+        }
+        if (byte === 0) break;
+        if (byte >= 32 && byte <= 126 || byte === 10 || byte === 13) {
+          chars.push(String.fromCharCode(byte));
+        } else if (chars.length > 4) {
+          break;
+        }
+      }
+      const text = chars.join('');
+      document.getElementById('lsbText').innerText = text ? text : "Nenhum texto ASCII legível detectado nos primeiros bits LSB.";
+    }
+  </script>
+</body>
+</html>

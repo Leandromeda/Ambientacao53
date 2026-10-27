@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base62 Encoder / Decoder (Offline) - SENAI Skills</title>
+  <!--
+    Desenvolvido por: Prof. Esp. Leandro Gaudio Rosa (https://www.linkedin.com/in/leandro-gr/)
+    GitHub: https://github.com/Leandromeda/
+    Ocupação #53 - Computação em Nuvem | SENAI São Paulo Skills
+    Ferramenta Offline de Codificação e Decodificação Base62
+  -->
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.85);
+      --border: rgba(148, 163, 184, 0.2);
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e293b, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+    p.subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
+    .form-group { margin-bottom: 1.25rem; }
+    label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: #cbd5e1; }
+    textarea {
+      width: 100%;
+      height: 110px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: #fff;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-family: "Consolas", monospace;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--accent); }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    button {
+      background: var(--accent);
+      color: #04121d;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    button.secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    button.secondary:hover { background: rgba(255, 255, 255, 0.15); }
+    .output-box {
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      font-family: "Consolas", monospace;
+      color: #38bdf8;
+      min-height: 80px;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">SENAI São Paulo Skills · Ocupação #53 (Computação em Nuvem)</div>
+    <h1>Decoder & Encoder de Base62 (Offline)</h1>
+    <p class="subtitle">Ferramenta offline para decodificar e codificar strings e números em Base62 (Item 16 do Checklist de Instalação).</p>
+
+    <div class="form-group">
+      <label for="inputData">Entrada (Texto ou Base62):</label>
+      <textarea id="inputData" placeholder="Cole aqui o texto plano ou a sequência Base62 para decodificar..."></textarea>
+    </div>
+
+    <div class="actions">
+      <button onclick="decodeBase62()">🔓 Decodificar Base62</button>
+      <button onclick="encodeBase62()">🔒 Codificar em Base62</button>
+      <button class="secondary" onclick="clearAll()">🧹 Limpar</button>
+      <button class="secondary" onclick="copyOutput()">📋 Copiar Resultado</button>
+    </div>
+
+    <div class="form-group">
+      <label for="outputData">Resultado:</label>
+      <div id="outputData" class="output-box">(O resultado aparecerá aqui)</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Desenvolvido por <a href="https://www.linkedin.com/in/leandro-gr/" target="_blank" style="color:var(--accent); font-weight:bold;">Prof. Esp. Leandro Gaudio Rosa</a> (<a href="https://github.com/Leandromeda/" target="_blank">@Leandromeda no GitHub</a>) · 100% Offline e Funcional
+  </div>
+
+  <script>
+    const CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+    function textToBigInt(str) {
+      const bytes = new TextEncoder().encode(str);
+      let hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+      return BigInt('0x' + (hex || '0'));
+    }
+
+    function bigIntToText(bigint) {
+      let hex = bigint.toString(16);
+      if (hex.length % 2 !== 0) hex = '0' + hex;
+      const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+      return new TextDecoder().decode(bytes);
+    }
+
+    function encodeBase62() {
+      const input = document.getElementById('inputData').value;
+      if (!input) {
+        document.getElementById('outputData').innerText = "Por favor, digite algum texto.";
+        return;
+      }
+      try {
+        let value = textToBigInt(input);
+        if (value === 0n) {
+          document.getElementById('outputData').innerText = CHARSET[0];
+          return;
+        }
+        let res = "";
+        const base = 62n;
+        while (value > 0n) {
+          const rem = value % base;
+          res = CHARSET[Number(rem)] + res;
+          value = value / base;
+        }
+        document.getElementById('outputData').innerText = res;
+      } catch (e) {
+        document.getElementById('outputData').innerText = "Erro ao codificar: " + e.message;
+      }
+    }
+
+    function decodeBase62() {
+      const input = document.getElementById('inputData').value.trim();
+      if (!input) {
+        document.getElementById('outputData').innerText = "Por favor, digite uma sequência Base62.";
+        return;
+      }
+      try {
+        let value = 0n;
+        const base = 62n;
+        for (let char of input) {
+          const index = CHARSET.indexOf(char);
+          if (index === -1) {
+            throw new Error(`Caractere inválido para Base62: '${char}'`);
+          }
+          value = value * base + BigInt(index);
+        }
+        const text = bigIntToText(value);
+        document.getElementById('outputData').innerText = text;
+      } catch (e) {
+        document.getElementById('outputData').innerText = "Erro ao decodificar: " + e.message;
+      }
+    }
+
+    function clearAll() {
+      document.getElementById('inputData').value = '';
+      document.getElementById('outputData').innerText = '(O resultado aparecerá aqui)';
+    }
+
+    function copyOutput() {
+      const out = document.getElementById('outputData').innerText;
+      if (out && !out.startsWith('(')) {
+        navigator.clipboard.writeText(out);
+        alert('Resultado copiado para a área de transferência!');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EXIF Metadata Extractor (Offline) - SENAI Skills</title>
+  <!--
+    Desenvolvido por: Prof. Esp. Leandro Gaudio Rosa (https://www.linkedin.com/in/leandro-gr/)
+    GitHub: https://github.com/Leandromeda/
+    Ocupação #53 - Computação em Nuvem | SENAI São Paulo Skills
+    Ferramenta Offline de Extração EXIF com suporte obrigatório ao campo Description
+  -->
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.85);
+      --border: rgba(148, 163, 184, 0.2);
+      --accent: #38bdf8;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --highlight: #f59e0b;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e293b, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+    p.subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
+    .dropzone {
+      border: 2px dashed rgba(56, 189, 248, 0.4);
+      border-radius: 12px;
+      padding: 2.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.6);
+      transition: all 0.2s;
+      margin-bottom: 1.5rem;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .dropzone svg { width: 48px; height: 48px; fill: var(--accent); margin-bottom: 0.5rem; }
+    .dropzone p { color: var(--muted); font-size: 0.95rem; }
+    .description-card {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .description-card h3 {
+      color: var(--highlight);
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .description-card .value {
+      font-family: "Consolas", monospace;
+      font-size: 1.05rem;
+      color: #fff;
+      word-break: break-all;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { background: rgba(255,255,255,0.04); color: var(--accent); font-weight: 600; }
+    td.tag-name { color: #cbd5e1; font-weight: 600; width: 35%; }
+    td.tag-value { font-family: "Consolas", monospace; color: #93c5fd; word-break: break-all; }
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">SENAI São Paulo Skills · Ocupação #53 (Computação em Nuvem)</div>
+    <h1>Extrator de Metadados EXIF (Offline)</h1>
+    <p class="subtitle">Análise completa de metadados fotográficos com extração explícita do campo <strong>Description (ImageDescription / Tag 0x010E)</strong> conforme Item 19 do Checklist.</p>
+
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+      <p>Clique ou arraste uma imagem JPG/JPEG/TIFF aqui para inspecionar</p>
+      <input type="file" id="fileInput" accept="image/jpeg,image/tiff,image/png" style="display:none" onchange="handleFileSelect(event)">
+    </div>
+
+    <div id="descriptionArea" class="description-card" style="display:none">
+      <h3>🔍 Campo EXIF 'Description' (ImageDescription / Tag 0x010E):</h3>
+      <div id="descValue" class="value">Nenhum texto encontrado</div>
+    </div>
+
+    <div id="resultsTableContainer" style="display:none">
+      <h3>Todos os Metadados Detectados:</h3>
+      <table id="exifTable">
+        <thead>
+          <tr>
+            <th>Tag / Metadado</th>
+            <th>Valor Extraído</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    Desenvolvido por <a href="https://www.linkedin.com/in/leandro-gr/" target="_blank" style="color:var(--accent); font-weight:bold;">Prof. Esp. Leandro Gaudio Rosa</a> (<a href="https://github.com/Leandromeda/" target="_blank">@Leandromeda no GitHub</a>) · 100% Offline e Funcional
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
+    });
+
+    function handleFileSelect(e) {
+      if (e.target.files.length > 0) processFile(e.target.files[0]);
+    }
+
+    const TAGS = {
+      0x010E: "ImageDescription (Description)",
+      0x010F: "Make",
+      0x0110: "Model",
+      0x0112: "Orientation",
+      0x011A: "XResolution",
+      0x011B: "YResolution",
+      0x0131: "Software",
+      0x0132: "DateTime",
+      0x013B: "Artist",
+      0x8298: "Copyright",
+      0x8769: "ExifIFDPointer",
+      0x8825: "GPSInfoIFDPointer",
+      0x9003: "DateTimeOriginal",
+      0x9004: "DateTimeDigitized",
+      0x9286: "UserComment",
+      0x9C9B: "XPTitle",
+      0x9C9C: "XPComment",
+      0x9C9D: "XPAuthor",
+      0x9C9E: "XPKeywords",
+      0x9C9F: "XPSubject"
+    };
+
+    function processFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        parseExif(new DataView(e.target.result), file.name);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function parseExif(view, filename) {
+      const results = {};
+      results["Nome do Arquivo"] = filename;
+
+      // Check JPEG SOI (0xFFD8)
+      if (view.getUint16(0) === 0xFFD8) {
+        let offset = 2;
+        while (offset < view.byteLength) {
+          if (view.getUint8(offset) !== 0xFF) break;
+          const marker = view.getUint8(offset + 1);
+          if (marker === 0xE1) { // APP1 Exif Marker
+            const exifHeader = view.getUint32(offset + 4);
+            // "Exif\0\0" = 0x45786966
+            if (exifHeader === 0x45786966) {
+              const tiffOffset = offset + 10;
+              readTiffHeader(view, tiffOffset, results);
+            }
+            break;
+          }
+          offset += 2 + view.getUint16(offset + 2);
+        }
+      }
+
+      displayResults(results);
+    }
+
+    function readTiffHeader(view, offset, results) {
+      const byteOrder = view.getUint16(offset);
+      const isLittle = (byteOrder === 0x4949); // 'II' = Intel Little Endian, 'MM' = Motorola Big Endian
+      if (view.getUint16(offset + 2, isLittle) !== 0x002A) return;
+
+      const firstIFDOffset = view.getUint32(offset + 4, isLittle);
+      readIFD(view, offset + firstIFDOffset, offset, isLittle, results);
+    }
+
+    function readIFD(view, dirOffset, tiffStart, isLittle, results) {
+      if (dirOffset + 2 > view.byteLength) return;
+      const numEntries = view.getUint16(dirOffset, isLittle);
+      let entryOffset = dirOffset + 2;
+
+      for (let i = 0; i < numEntries; i++) {
+        if (entryOffset + 12 > view.byteLength) break;
+        const tag = view.getUint16(entryOffset, isLittle);
+        const type = view.getUint16(entryOffset + 2, isLittle);
+        const count = view.getUint32(entryOffset + 4, isLittle);
+        const valueOffset = (count <= 4 && type === 1) ? entryOffset + 8 : (count === 1 && type === 3) ? entryOffset + 8 : tiffStart + view.getUint32(entryOffset + 8, isLittle);
+
+        const tagName = TAGS[tag] || ("Tag_0x" + tag.toString(16).toUpperCase());
+        let val = "";
+
+        if (type === 2) { // ASCII String
+          const strBytes = [];
+          for (let j = 0; j < count; j++) {
+            if (valueOffset + j >= view.byteLength) break;
+            const b = view.getUint8(valueOffset + j);
+            if (b === 0) break;
+            strBytes.push(String.fromCharCode(b));
+          }
+          val = strBytes.join('');
+        } else if (type === 3) { // Short
+          val = view.getUint16(entryOffset + 8, isLittle);
+        } else if (type === 4) { // Long
+          val = view.getUint32(entryOffset + 8, isLittle);
+        } else {
+          val = "(Dado binário - " + count + " bytes)";
+        }
+
+        if (val) results[tagName] = val;
+
+        // SubIFD pointer for ExifIFD
+        if (tag === 0x8769 && type === 4) {
+          readIFD(view, tiffStart + view.getUint32(entryOffset + 8, isLittle), tiffStart, isLittle, results);
+        }
+
+        entryOffset += 12;
+      }
+    }
+
+    function displayResults(results) {
+      const descArea = document.getElementById('descriptionArea');
+      const descValue = document.getElementById('descValue');
+      const tableContainer = document.getElementById('resultsTableContainer');
+      const tbody = document.getElementById('tableBody');
+
+      tbody.innerHTML = '';
+      descArea.style.display = 'block';
+      tableContainer.style.display = 'block';
+
+      // Check Description
+      let foundDesc = null;
+      for (let k in results) {
+        if (k.toLowerCase().includes('description') || k === 'ImageDescription (Description)') {
+          foundDesc = results[k];
+          break;
+        }
+      }
+      if (foundDesc) {
+        descValue.innerHTML = `<span style="color:#22c55e">✔ [ENCONTRADO]:</span> <strong>${escapeHtml(foundDesc)}</strong>`;
+      } else {
+        descValue.innerHTML = `<span style="color:#ef4444">✕ Não encontrado nesta imagem.</span> (Certifique-se de que a imagem contém a tag EXIF 0x010E ImageDescription)`;
+      }
+
+      for (let tag in results) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td class="tag-name">${escapeHtml(tag)}</td><td class="tag-value">${escapeHtml(String(results[tag]))}</td>`;
+        tbody.appendChild(row);
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.innerText = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
