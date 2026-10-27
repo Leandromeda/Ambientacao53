@@ -1,4 +1,4 @@
-# Verificador Automatizado de Checklist de Instalação (22 Itens)
+# Ambientação 53: Verificador Automatizado (22 Itens)
 ### SENAI São Paulo Skills · Ciclo 2026-2028
 ### Ocupação #53 — Computação em Nuvem
 
